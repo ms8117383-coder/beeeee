@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工讀排班系統</title>
+
+<style>
+body {
+  font-family: Arial;
+  padding: 20px;
+  background: #f5f5f5;
+}
+
+h2 {
+  text-align: center;
+}
+
+input {
+  padding: 8px;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  background: #007bff;
+  color: white;
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+</style>
+
+</head>
+
+<body>
+
+<h2>工讀排班系統</h2>
+
+<label>姓名：</label>
+<input id="name" placeholder="請輸入姓名">
+
+<div id="jobs"></div>
+
+<script>
+const API = "https://script.google.com/macros/s/AKfycbxHAwzffv2HKDUmfBDdUPw6RNpHBedvvSCg1pAHy23w5sXB2afUv3YGsGgr0Ix0zGU1/exec.";
+
+// 載入班表
+async function loadJobs(){
+  const res = await fetch(API);
+  const data = await res.json();
+
+  let html = "";
+
+  data.forEach(j => {
+    const full = j.remain <= 0;
+
+    html += `
+      <div class="card">
+        <b>${j.job}</b><br>
+        時間：${j.start} - ${j.end}<br>
+        薪資：$${j.salary}<br>
+        剩餘名額：${j.remain}<br><br>
+
+        <button ${full ? "disabled" : ""}
+          onclick="apply('${j.id}')">
+          ${full ? "已額滿" : "我要報名"}
+        </button>
+      </div>
+    `;
+  });
+
+  document.getElementById("jobs").innerHTML = html;
+}
+
+// 報名
+async function apply(id){
+  const name = document.getElementById("name").value;
+
+  if(!name){
+    alert("請輸入姓名");
+    return;
+  }
+
+  const form = new FormData();
+  form.append("name", name);
+  form.append("id", id);
+
+  const res = await fetch(API, {
+    method: "POST",
+    body: form
+  });
+
+  const text = await res.text();
+
+  if(text === "success"){
+    alert("報名成功！");
+  } else if(text === "full"){
+    alert("此時段已額滿！");
+  } else {
+    alert("發生錯誤");
+  }
+
+  loadJobs(); // 更新畫面
+}
+
+// 初始化
+loadJobs();
+</script>
+
+</body>
+</html>
